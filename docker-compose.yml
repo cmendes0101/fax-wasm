@@ -1,0 +1,17 @@
+services:
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - fax-third-party:/src/third_party
+      - fax-build:/src/build
+      - ./dist:/src/dist
+      - ./src/c:/src/src/c
+      - ./scripts:/src/scripts
+      - ./Makefile:/src/Makefile
+    command: make all
+
+volumes:
+  fax-third-party:
+  fax-build:

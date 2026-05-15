@@ -1,0 +1,84 @@
+name: Build & Test
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "Makefile"
+      - "Dockerfile"
+      - "package*.json"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "Makefile"
+      - "Dockerfile"
+      - "package*.json"
+      - ".github/workflows/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache third_party sources
+        uses: actions/cache@v4
+        with:
+          path: third_party
+          key: fax-wasm-deps-${{ hashFiles('scripts/fetch-deps.sh') }}
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: fax-wasm-build-${{ hashFiles('scripts/build-*.sh', 'src/c/wrapper.c') }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build WASM in Docker
+        run: |
+          docker build -t fax-wasm-builder .
+          docker run --rm \
+            -v "$PWD/third_party:/src/third_party" \
+            -v "$PWD/build:/src/build" \
+            -v "$PWD/dist:/src/dist" \
+            -v "$PWD/src/c:/src/src/c" \
+            fax-wasm-builder make deps libs wasm
+
+      - name: Verify WASM output
+        run: |
+          test -f dist/fax.wasm
+          test -f dist/fax.js
+          ls -lh dist/fax.wasm
+          echo "WASM size: $(wc -c < dist/fax.wasm) bytes"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Bundle TypeScript
+        run: npm run build:bundle
+
+      - name: Run UDPTL unit tests
+        run: npx vitest run test/udptl.test.ts
+
+      - name: Run integration tests
+        run: npx vitest run
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fax-wasm-dist
+          path: dist/
+          retention-days: 7

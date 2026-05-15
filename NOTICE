@@ -1,0 +1,27 @@
+@sipflow/fax-wasm
+Copyright (c) 2026 Sipflow
+
+This product includes software developed by third parties:
+
+---
+
+spandsp - A DSP library for telephony
+  License: LGPL-2.1-or-later
+  Copyright (c) 2003-2012 Steve Underwood
+  Maintained by: FreeSWITCH (https://github.com/freeswitch/spandsp)
+  https://www.soft-switch.org/
+
+---
+
+libtiff - TIFF Library and Utilities
+  License: libtiff (BSD-like)
+  Copyright (c) 1988-1997 Sam Leffler
+  Copyright (c) 1991-1997 Silicon Graphics, Inc.
+  https://libtiff.gitlab.io/libtiff/
+
+---
+
+zlib - A Massively Spiffy Yet Delicately Unobtrusive Compression Library
+  License: zlib
+  Copyright (c) 1995-2024 Jean-loup Gailly and Mark Adler
+  https://www.zlib.net/

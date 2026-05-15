@@ -1,0 +1,69 @@
+{
+  "name": "@sipflow/fax-wasm",
+  "version": "0.1.0",
+  "description": "Decode T.30 (audio) and T.38 (UDPTL) faxes to TIFF in the browser via WebAssembly (spandsp + libtiff)",
+  "license": "LGPL-2.1-or-later",
+  "author": "Sipflow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cmendes0101/fax-wasm.git"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./worker": {
+      "import": {
+        "types": "./dist/worker.d.ts",
+        "default": "./dist/worker.mjs"
+      }
+    },
+    "./fax.wasm": "./dist/fax.wasm"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build:wasm": "docker compose run --rm build make wasm",
+    "build:bundle": "node scripts/bundle.mjs",
+    "build": "npm run build:wasm && npm run build:bundle",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist && docker compose down -v 2>/dev/null || true"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "vitest": "^3.2.0",
+    "typescript": "^5.8.0"
+  },
+  "keywords": [
+    "fax",
+    "t30",
+    "t38",
+    "sip",
+    "pcap",
+    "tiff",
+    "spandsp",
+    "wasm",
+    "webassembly",
+    "voip",
+    "rtp",
+    "udptl"
+  ]
+}
