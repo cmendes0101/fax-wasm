@@ -44,7 +44,7 @@
     "build": "npm run build:wasm && npm run build:bundle",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "test -f dist/fax.wasm && test -f dist/index.mjs || npm run build",
     "clean": "rm -rf dist && docker compose down -v 2>/dev/null || true"
   },
   "devDependencies": {
