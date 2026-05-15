@@ -18,6 +18,18 @@ export { decodeT38Fax } from "./t38.js";
 export { unframeUdptl } from "./udptl.js";
 export { resetModule } from "./loader.js";
 
+// Worker-client helper. Pure types/classes — no `Worker` construction
+// happens at module load, so this is safe to import from any environment
+// (including Node and SSR). The class only touches `Worker` once a
+// consumer instantiates it.
+export { FaxWorkerClient, type DecodeOptions } from "./client.js";
+
+// Re-export the worker protocol types so consumers who want to drive
+// the worker manually (or build their own client) have them at the
+// same import path. Type-only — does not pull worker code into the
+// main bundle.
+export type { WorkerRequest, WorkerResponse } from "./worker.js";
+
 import { decodeG711Fax } from "./audio.js";
 import { decodeT38Fax } from "./t38.js";
 import type { FaxResult, RtpPacketLike } from "./types.js";

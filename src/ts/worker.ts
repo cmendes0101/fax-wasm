@@ -1,21 +1,28 @@
 /**
  * Web Worker entry point for @sipflow/fax-wasm.
  *
- * Offloads fax decoding to a worker thread so the main thread stays
- * responsive. The main thread posts messages with the decode request
- * and receives the result asynchronously.
+ * This module is **side-effectful**: importing it installs `onmessage`
+ * on `globalThis`, turning whatever context is evaluating it into a
+ * fax-decoding worker. It exports types (`WorkerRequest`,
+ * `WorkerResponse`) but no runtime symbols.
  *
- * Usage from main thread:
+ * Usage: see the "Web Worker" section in the package README. The short
+ * version, because bundlers (Webpack/Turbopack/Vite) won't resolve a
+ * bare package specifier inside `new URL(...)`:
  *
+ *   // 1. Tiny consumer-owned shim — relative path the bundler can
+ *   //    resolve. Side-effect import does the rest.
+ *   // app/fax-worker.ts
+ *   import "@sipflow/fax-wasm/worker";
+ *
+ *   // 2. Main thread:
+ *   import { FaxWorkerClient } from "@sipflow/fax-wasm";
  *   const worker = new Worker(
- *     new URL('@sipflow/fax-wasm/worker', import.meta.url),
- *     { type: 'module' }
+ *     new URL("./fax-worker.ts", import.meta.url),
+ *     { type: "module" },
  *   );
- *
- *   worker.postMessage({ type: 'decodeG711', pcm: int16Array });
- *   worker.onmessage = (e) => {
- *     const result: FaxResult = e.data;
- *   };
+ *   const client = new FaxWorkerClient(worker);
+ *   const result = await client.decodeT38UDPTL(packets, { signal });
  */
 
 import { decodeG711Fax } from "./audio.js";
@@ -54,12 +61,18 @@ ctx.onmessage = async (event: MessageEvent<WorkerRequest>) => {
           packets: req.packets,
         });
         break;
-      default:
+      default: {
+        // Exhaustive-match: TS narrows `req` to `never` here, but at
+        // runtime an out-of-protocol message could still arrive (e.g.
+        // mismatched package versions across main/worker). Cast back to
+        // the protocol shape just to read `id` + `type` defensively.
+        const unknown = req as { id: string; type: string };
         ctx.postMessage({
-          id: req.id,
-          error: `Unknown request type: ${(req as { type: string }).type}`,
+          id: unknown.id,
+          error: `Unknown request type: ${unknown.type}`,
         } satisfies WorkerResponse);
         return;
+      }
     }
 
     ctx.postMessage({ id: req.id, result } satisfies WorkerResponse);

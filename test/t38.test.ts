@@ -2,14 +2,14 @@
  * Tests for the T.38 UDPTL fax decoder.
  *
  * These tests require the WASM module to be built first (make wasm).
- * They are skipped if dist/fax.wasm is not present.
+ * They are skipped if dist/fax.js is not present (wasm is inlined).
  */
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const wasmPath = resolve(__dirname, "../dist/fax.wasm");
+const wasmPath = resolve(__dirname, "../dist/fax.js");
 const wasmAvailable = existsSync(wasmPath);
 
 describe.skipIf(!wasmAvailable)("decodeT38Fax", () => {

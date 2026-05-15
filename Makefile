@@ -41,10 +41,13 @@ $(PREFIX)/lib/libspandsp.a: $(PREFIX)/lib/libtiff.a
 	@bash scripts/build-spandsp.sh
 
 # ---------- compile wasm ----------
+#
+# Note: emcc is invoked with -s SINGLE_FILE=1, so the wasm binary is
+# inlined into dist/fax.js as base64. There is no separate dist/fax.wasm.
 
-wasm: $(DIST)/fax.wasm
+wasm: $(DIST)/fax.js
 
-$(DIST)/fax.wasm: $(PREFIX)/lib/libspandsp.a $(PREFIX)/lib/libtiff.a $(PREFIX)/lib/libjpeg.a $(PREFIX)/lib/libz.a src/c/wrapper.c
+$(DIST)/fax.js: $(PREFIX)/lib/libspandsp.a $(PREFIX)/lib/libtiff.a $(PREFIX)/lib/libjpeg.a $(PREFIX)/lib/libz.a src/c/wrapper.c
 	@echo "==> Building WASM module..."
 	@bash scripts/build-wasm.sh
 

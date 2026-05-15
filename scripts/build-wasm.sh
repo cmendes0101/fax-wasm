@@ -54,8 +54,12 @@ emcc "$ROOT/src/c/wrapper.c" \
   -s ENVIRONMENT='web,worker,node' \
   -s FILESYSTEM=1 \
   -s FORCE_FILESYSTEM=1 \
-  -s SINGLE_FILE=0 \
+  -s SINGLE_FILE=1 \
   --no-entry
 
-echo "[wasm] Built $DIST/fax.js + $DIST/fax.wasm"
-ls -lh "$DIST/fax.js" "$DIST/fax.wasm"
+# SINGLE_FILE=1 inlines the wasm binary as base64 inside fax.js, so the
+# build emits only one artifact (no separate dist/fax.wasm). This removes
+# the runtime-hosting problem for consumers — bundlers don't have to be
+# taught how to ship a sibling .wasm next to the JS chunk.
+echo "[wasm] Built $DIST/fax.js (wasm inlined via SINGLE_FILE=1)"
+ls -lh "$DIST/fax.js"

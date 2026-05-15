@@ -1,15 +1,17 @@
 /**
  * Tests for the G.711 audio fax decoder.
  *
- * These tests require the WASM module to be built first (make wasm).
- * They are skipped if dist/fax.wasm is not present.
+ * These tests require the WASM module to be built first (`make wasm`).
+ * They are skipped if `dist/fax.js` is missing. The wasm binary is now
+ * inlined into `fax.js` as base64 (SINGLE_FILE=1), so there is no
+ * separate `dist/fax.wasm` sentinel anymore.
  */
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const wasmPath = resolve(__dirname, "../dist/fax.wasm");
+const wasmPath = resolve(__dirname, "../dist/fax.js");
 const wasmAvailable = existsSync(wasmPath);
 
 describe.skipIf(!wasmAvailable)("decodeG711Fax", () => {

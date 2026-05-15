@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 
 const fixturesDir = resolve(__dirname, "fixtures");
-const wasmPath = resolve(__dirname, "../dist/fax.wasm");
+const wasmPath = resolve(__dirname, "../dist/fax.js");
 const wasmAvailable = existsSync(wasmPath);
 
 function sha256(data: Uint8Array): string {

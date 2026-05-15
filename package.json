@@ -1,7 +1,7 @@
 {
   "name": "@sipflow/fax-wasm",
-  "version": "0.1.0",
-  "description": "Decode T.30 (audio) and T.38 (UDPTL) faxes to TIFF in the browser via WebAssembly (spandsp + libtiff)",
+  "version": "0.2.0",
+  "description": "Decode T.30 (audio) and T.38 (UDPTL) faxes to TIFF in the browser or Node via WebAssembly (spandsp + libtiff)",
   "license": "LGPL-2.1-or-later",
   "author": "Sipflow",
   "repository": {
@@ -9,7 +9,10 @@
     "url": "https://github.com/cmendes0101/fax-wasm.git"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/worker.mjs",
+    "./src/ts/worker.ts"
+  ],
   "engines": {
     "node": ">=18"
   },
@@ -18,6 +21,16 @@
   ],
   "exports": {
     ".": {
+      "node": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.node.mjs"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.node.cjs"
+        }
+      },
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.mjs"
@@ -28,12 +41,11 @@
       }
     },
     "./worker": {
-      "import": {
-        "types": "./dist/worker.d.ts",
-        "default": "./dist/worker.mjs"
-      }
+      "types": "./dist/worker.d.ts",
+      "import": "./dist/worker.mjs",
+      "default": "./dist/worker.mjs"
     },
-    "./fax.wasm": "./dist/fax.wasm"
+    "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -41,10 +53,10 @@
   "scripts": {
     "build:wasm": "docker compose run --rm build make wasm",
     "build:bundle": "node scripts/bundle.mjs",
-    "build": "npm run build:wasm && npm run build:bundle",
+    "build": "pnpm run build:wasm && pnpm run build:bundle",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "test -f dist/fax.wasm && test -f dist/index.mjs || npm run build",
+    "prepublishOnly": "test -f dist/fax.js && test -f dist/index.mjs || pnpm run build",
     "clean": "rm -rf dist && docker compose down -v 2>/dev/null || true"
   },
   "devDependencies": {

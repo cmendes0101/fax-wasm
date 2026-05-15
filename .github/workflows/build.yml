@@ -55,10 +55,11 @@ jobs:
 
       - name: Verify WASM output
         run: |
-          test -f dist/fax.wasm
+          # Wasm is inlined into fax.js as base64 (SINGLE_FILE=1), so
+          # there is no separate dist/fax.wasm artifact.
           test -f dist/fax.js
-          ls -lh dist/fax.wasm
-          echo "WASM size: $(wc -c < dist/fax.wasm) bytes"
+          ls -lh dist/fax.js
+          echo "Glue + inlined WASM size: $(wc -c < dist/fax.js) bytes"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
