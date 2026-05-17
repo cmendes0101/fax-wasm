@@ -145,6 +145,26 @@ typedef struct {
     char out_path[256];
 } t38_handle_t;
 
+/*
+ * spandsp's t38_core_init() short-circuits with NULL when tx_packet_handler
+ * is NULL, which makes t38_terminal_init() return NULL even though we only
+ * ever consume IFP packets (receive-only decoder). Hand it a no-op stub so
+ * the terminal initializes; we never actually send anything.
+ */
+static int t38_tx_packet_noop(t38_core_state_t *t,
+                              void *user_data,
+                              const uint8_t *buf,
+                              int len,
+                              int count)
+{
+    (void)t;
+    (void)user_data;
+    (void)buf;
+    (void)len;
+    (void)count;
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 void *fax_t38_create(const char *out_path)
 {
@@ -153,7 +173,7 @@ void *fax_t38_create(const char *out_path)
 
     strncpy(h->out_path, out_path, sizeof(h->out_path) - 1);
 
-    h->t38 = t38_terminal_init(NULL, FALSE, NULL, NULL);
+    h->t38 = t38_terminal_init(NULL, FALSE, t38_tx_packet_noop, h);
     if (!h->t38) {
         free(h);
         return NULL;

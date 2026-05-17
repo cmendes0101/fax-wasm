@@ -33,4 +33,19 @@ describe.skipIf(!wasmAvailable)("decodeT38Fax", () => {
     expect(result.tiff).toBeNull();
     expect(result.diagnostics.some((d) => d.includes("UDPTL unframe error"))).toBe(true);
   });
+
+  // Regression: spandsp's t38_terminal_init() returns NULL when its
+  // tx_packet_handler argument is NULL, which made `_fax_t38_create`
+  // always return 0 and surface as the diagnostic below. The previous
+  // empty/malformed cases didn't catch it because they passed `tiff === null`
+  // either way. See wrapper.c::fax_t38_create.
+  it("initializes the T.38 terminal even with no input packets", async () => {
+    const { decodeT38Fax } = await import("../src/ts/index.js");
+
+    const result = await decodeT38Fax([]);
+
+    expect(
+      result.diagnostics.some((d) => d.includes("Failed to create T.38 decoder")),
+    ).toBe(false);
+  });
 });

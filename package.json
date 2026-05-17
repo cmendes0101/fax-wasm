@@ -1,6 +1,6 @@
 {
   "name": "@sipflow/fax-wasm",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Decode T.30 (audio) and T.38 (UDPTL) faxes to TIFF in the browser or Node via WebAssembly (spandsp + libtiff)",
   "license": "LGPL-2.1-or-later",
   "author": "Sipflow",

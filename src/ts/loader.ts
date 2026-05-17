@@ -48,10 +48,39 @@ async function initModule(): Promise<FaxWasmModule> {
   //
   // The `node` export condition in package.json routes Node consumers
   // to the latter; everything else gets the former.
+  //
+  // The Emscripten glue is UMD (`module.exports = createFaxModule;
+  // module.exports.default = createFaxModule`), and different bundlers
+  // surface different shapes when this is dynamically imported from ESM:
+  //
+  //   - Node ESM             -> `{ default: createFaxModule }`
+  //   - Webpack (esModule)   -> `{ default: createFaxModule }` (usually)
+  //   - Webpack (terser+UMD) -> the function itself; `.default` is dropped
+  //                             because `module.exports` is a function, not
+  //                             an object the synthesizer can attach onto
+  //   - Turbopack            -> `{ default: createFaxModule }`
+  //
+  // Pick whichever shape is callable so the loader works under every
+  // bundler we ship through. Without this fallback, the webpack-prod
+  // worker chunk throws "e is not a function" (the minified identifier
+  // for `createFaxModule` after `.default` returned undefined).
   // @ts-expect-error — Emscripten glue has no .d.ts
-  const createFaxModule = (await import("../../dist/fax.node.js")).default;
-  const mod: FaxWasmModule = await createFaxModule();
-  return mod;
+  const mod = await import("../../dist/fax.node.js");
+  const factory: unknown =
+    typeof mod === "function"
+      ? mod
+      : mod && typeof (mod as { default?: unknown }).default === "function"
+        ? (mod as { default: unknown }).default
+        : mod;
+  if (typeof factory !== "function") {
+    throw new Error(
+      "@sipflow/fax-wasm: Emscripten module factory not resolvable from glue " +
+        "(no callable default export found). This usually indicates a bundler " +
+        "stripped the CJS→ESM interop wrapper around dist/fax.js.",
+    );
+  }
+  const inst: FaxWasmModule = await (factory as () => Promise<FaxWasmModule>)();
+  return inst;
 }
 
 /**

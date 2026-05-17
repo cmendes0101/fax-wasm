@@ -161,12 +161,71 @@ if (existsSync(faxJsPath)) {
       neutralized += 1;
     }
   }
-  if (neutralized > 0) {
-    writeFileSync(faxJsPath, glue);
-    console.log(
-      `  neutralized ${neutralized} Node require() call(s) in dist/fax.js (browser-safe variant)`,
-    );
+
+  // Replace emcc's UMD footer with a plain ESM `export default`. The UMD
+  // tail only worked under classic CommonJS `require()` paths, and this
+  // package is published as `"type": "module"` — every consumer (the
+  // bundled .mjs/.cjs entries, the worker, and external bundlers) loads
+  // fax.js via dynamic `import()`, which goes through Node's ESM
+  // loader. Without an explicit `export default`, the loader saw an
+  // empty namespace; *with* the UMD branch still present, some loaders
+  // additionally tripped on `module.exports = ...` because their
+  // synthetic `module` shim is a read-only Module namespace. Swapping
+  // the UMD footer for a single `export default` resolves both failure
+  // modes (and is what surfaced as "e is not a function" in webpack's
+  // minified worker chunks).
+  const UMD_FOOTER_RE =
+    /if \(typeof exports === 'object' && typeof module === 'object'\)[\s\S]+?define\(\[\], \(\) => createFaxModule\);?\s*$/m;
+  const ESM_FOOTER = "export default createFaxModule;\n";
+  if (UMD_FOOTER_RE.test(glue)) {
+    glue = glue.replace(UMD_FOOTER_RE, ESM_FOOTER);
+  } else if (!glue.includes("export default createFaxModule")) {
+    // Fallback: footer wasn't where we expected — append rather than
+    // miss it entirely.
+    glue += "\n" + ESM_FOOTER;
   }
+
+  writeFileSync(faxJsPath, glue);
+  console.log(
+    `  rewrote dist/fax.js (browser-safe variant): ${neutralized} require() ` +
+      `call(s) neutralized, UMD footer replaced with ESM default export`,
+  );
+
+  // Same swap for the Node copy, plus a Node-ESM compatibility shim.
+  // Both `dist/index.node.mjs` and `dist/index.node.cjs` consume
+  // fax.node.js via dynamic `import()`, so it's always loaded as ESM
+  // under the package's `"type": "module"`. The pristine emcc glue
+  // uses `__dirname` inside its `if (ENVIRONMENT_IS_NODE) { ... }`
+  // branch — which is a CJS-only global, not defined in ESM. Prepend
+  // a `node:url`-based shim that recreates `__dirname` / `__filename`
+  // so the Node branch runs cleanly under ESM.
+  //
+  // (Direct `require("./fax.node.js")` already fails with
+  // ERR_REQUIRE_ESM under `type: module`, so swapping the UMD footer
+  // out here is observable to no one.)
+  const NODE_ESM_SHIM = [
+    'import { fileURLToPath as __faxFileURLToPath } from "node:url";',
+    'import { dirname as __faxDirname } from "node:path";',
+    'import { createRequire as __faxCreateRequire } from "node:module";',
+    "const __filename = __faxFileURLToPath(import.meta.url);",
+    "const __dirname = __faxDirname(__filename);",
+    "const require = __faxCreateRequire(import.meta.url);",
+    "",
+  ].join("\n");
+
+  let nodeGlue = readFileSync(faxNodePath, "utf8");
+  if (UMD_FOOTER_RE.test(nodeGlue)) {
+    nodeGlue = nodeGlue.replace(UMD_FOOTER_RE, ESM_FOOTER);
+  } else if (!nodeGlue.includes("export default createFaxModule")) {
+    nodeGlue += "\n" + ESM_FOOTER;
+  }
+  if (!nodeGlue.includes("__faxFileURLToPath")) {
+    nodeGlue = NODE_ESM_SHIM + nodeGlue;
+  }
+  writeFileSync(faxNodePath, nodeGlue);
+  console.log(
+    `  prepared dist/fax.node.js: Node-ESM shim prepended, ESM default export ensured`,
+  );
 }
 
 // Per-target glue-path rewrites: browser artifacts point at the
